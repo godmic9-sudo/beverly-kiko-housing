@@ -29,7 +29,7 @@ function App() {
     setStatusMessage('Initiating MTN MoMo Prompt...');
 
     try {
-      const response = await fetch('https://your-backend-api.onrender.com/api/pay-mtn-rent', {
+      const response = await fetch('/api/pay-mtn-rent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenantName, houseNo, phone, amount }),
