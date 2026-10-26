@@ -19,7 +19,6 @@ export default function App() {
   const [properties] = useState(initialProperties);
   const [transactions, setTransactions] = useState(initialTransactions);
   
-  // Payment Modal States
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [paymentPhone, setPaymentPhone] = useState('');
   const [paymentProvider, setPaymentProvider] = useState('MTN Mobile Money');
@@ -54,7 +53,6 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'sans-serif', backgroundColor: '#f3f4f6', minHeight: '100vh', color: '#1f2937' }}>
-      {/* Header Bar */}
       <header style={{ backgroundColor: '#0f766e', color: 'white', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>Beverly Kiko Housing Uganda</h1>
@@ -66,7 +64,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Navigation */}
       <nav style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', padding: '0 24px', display: 'flex', gap: '24px' }}>
         {['overview', 'properties', 'transactions'].map((tab) => (
           <button
@@ -88,9 +85,7 @@ export default function App() {
         ))}
       </nav>
 
-      {/* Main Content */}
       <main style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Metric Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Total Units</div>
@@ -110,7 +105,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tab Views */}
         {activeTab !== 'transactions' ? (
           <section style={{ backgroundColor: 'white', borderRadius: '8px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <h2 style={{ fontSize: '18px', margin: '0 0 16px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
@@ -180,7 +174,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Payment Modal */}
       {selectedProperty && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '24px', width: '90%', maxWidth: '420px' }}>
