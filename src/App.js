@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 
-const initialProperties = [
+const defaultProperties = [
   { id: 'PROP-101', title: 'Beverly Heights - Unit A1', location: 'Kololo, Kampala', rentUgx: 1800000, tenant: 'Abram Carter', phone: '0770000001' },
   { id: 'PROP-102', title: 'Beverly Suites - Unit B4', location: 'Naalya, Kampala', rentUgx: 850000, tenant: 'Kiko Housing', phone: '0750000002' },
   { id: 'PROP-103', title: 'Beverly Manor - Unit C2', location: 'Ntinda, Kampala', rentUgx: 1200000, tenant: 'N/A', phone: 'N/A' },
@@ -23,7 +23,6 @@ const availableMonths = [
   { id: 'Dec-2026', label: 'December 2026' },
 ];
 
-// --- GOSPEL MUSIC PLAYER COMPONENT ---
 function GospelMusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
@@ -33,7 +32,7 @@ function GospelMusicPlayer() {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play().catch(e => console.log('Audio autoplay prevented:', e));
+        audioRef.current.play().catch(e => console.log('Audio playback info:', e));
       }
       setIsPlaying(!isPlaying);
     }
@@ -44,7 +43,7 @@ function GospelMusicPlayer() {
       position: 'fixed',
       bottom: '20px',
       right: '20px',
-      backgroundColor: 'rgba(15, 118, 110, 0.9)',
+      backgroundColor: 'rgba(15, 118, 110, 0.95)',
       backdropFilter: 'blur(8px)',
       color: 'white',
       padding: '10px 16px',
@@ -61,7 +60,7 @@ function GospelMusicPlayer() {
         src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=ambient-gospel-worship-113575.mp3" 
         loop 
       />
-      <span style={{ fontSize: '13px', fontWeight: 'bold' }}>🎵 Gospel Music</span>
+      <span style={{ fontSize: '13px', fontWeight: 'bold' }}>🎵 Gospel Ambient Player</span>
       <button 
         onClick={togglePlay} 
         style={{
@@ -81,9 +80,8 @@ function GospelMusicPlayer() {
   );
 }
 
-// --- TENANT PORTAL PAGE WITH CALENDAR & RECEIPT ---
-function TenantPortal({ onNewPayment }) {
-  const [selectedUnit, setSelectedUnit] = useState(initialProperties[0]);
+function TenantPortal({ properties, onNewPayment }) {
+  const [selectedUnit, setSelectedUnit] = useState(properties[0] || defaultProperties[0]);
   const [selectedMonths, setSelectedMonths] = useState(['Oct-2026']);
   const [phone, setPhone] = useState('');
   const [provider, setProvider] = useState('MTN Mobile Money');
@@ -100,11 +98,11 @@ function TenantPortal({ onNewPayment }) {
     }
   };
 
-  const totalAmountDue = selectedUnit.rentUgx * selectedMonths.length;
+  const totalAmountDue = (selectedUnit?.rentUgx || 0) * selectedMonths.length;
 
   const handleTenantPayment = (e) => {
     e.preventDefault();
-    if (selectedMonths.length === 0) return;
+    if (selectedMonths.length === 0 || !selectedUnit) return;
 
     setPaymentStatus('processing');
 
@@ -129,10 +127,10 @@ function TenantPortal({ onNewPayment }) {
   };
 
   return (
-    <main style={{ maxWidth: '520px', margin: '30px auto', padding: '20px' }}>
-      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '26px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+    <main style={{ maxWidth: '540px', margin: '30px auto', padding: '20px' }}>
+      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '26px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
         <h2 style={{ margin: '0 0 6px 0', color: '#0f766e', fontSize: '22px', fontWeight: 'bold' }}>Pay Rent Online</h2>
-        <p style={{ margin: '0 0 20px 0', color: '#4b5563', fontSize: '14px' }}>Select your housing unit, tick the month(s), and pay via Mobile Money.</p>
+        <p style={{ margin: '0 0 20px 0', color: '#4b5563', fontSize: '14px' }}>Select your housing unit, tick your months, and pay via Mobile Money.</p>
 
         {paymentStatus === 'success' && latestReceipt ? (
           <div style={{ backgroundColor: '#ffffff', border: '2px dashed #0f766e', borderRadius: '10px', padding: '20px', marginTop: '10px' }}>
@@ -145,30 +143,12 @@ function TenantPortal({ onNewPayment }) {
             </div>
 
             <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '8px', color: '#374151', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Transaction ID:</span>
-                <strong>{latestReceipt.id}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Tenant Name:</span>
-                <strong>{latestReceipt.tenant}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Housing Unit:</span>
-                <strong>{latestReceipt.unit}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Month(s) Covered:</span>
-                <strong style={{ color: '#0f766e', textAlign: 'right', maxWidth: '200px' }}>{latestReceipt.monthsPaid}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Payment Network:</span>
-                <span>{latestReceipt.provider} ({latestReceipt.phone})</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Date & Time:</span>
-                <span>{latestReceipt.time}</span>
-              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Transaction ID:</span><strong>{latestReceipt.id}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tenant Name:</span><strong>{latestReceipt.tenant}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Housing Unit:</span><strong>{latestReceipt.unit}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Month(s) Covered:</span><strong style={{ color: '#0f766e', textAlign: 'right', maxWidth: '200px' }}>{latestReceipt.monthsPaid}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Network:</span><span>{latestReceipt.provider} ({latestReceipt.phone})</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Date & Time:</span><span>{latestReceipt.time}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e5e7eb', paddingTop: '8px', marginTop: '4px', fontSize: '15px' }}>
                 <span style={{ fontWeight: 'bold' }}>Total Paid:</span>
                 <strong style={{ color: '#16a34a' }}>UGX {latestReceipt.amount.toLocaleString()}</strong>
@@ -176,34 +156,25 @@ function TenantPortal({ onNewPayment }) {
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                onClick={() => window.print()} 
-                style={{ flex: 1, padding: '10px', background: '#374151', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
-                🖨️ Print / Save Receipt
-              </button>
-              <button 
-                onClick={() => { setPaymentStatus('idle'); setSelectedMonths(['Oct-2026']); setPhone(''); }} 
-                style={{ flex: 1, padding: '10px', background: '#0f766e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
-                Make Another Payment
-              </button>
+              <button onClick={() => window.print()} style={{ flex: 1, padding: '10px', background: '#374151', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>🖨️ Print Receipt</button>
+              <button onClick={() => { setPaymentStatus('idle'); setSelectedMonths(['Oct-2026']); setPhone(''); }} style={{ flex: 1, padding: '10px', background: '#0f766e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>New Payment</button>
             </div>
           </div>
         ) : (
           <>
-            <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Select Your Housing Unit</label>
+            <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Select Housing Unit</label>
             <select 
-              onChange={(e) => setSelectedUnit(initialProperties.find(p => p.id === e.target.value))}
+              value={selectedUnit?.id || ''}
+              onChange={(e) => setSelectedUnit(properties.find(p => p.id === e.target.value))}
               style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', marginBottom: '20px', fontSize: '14px', backgroundColor: 'white' }}
             >
-              {initialProperties.map(p => (
-                <option key={p.id} value={p.id}>{p.title} - {p.tenant}</option>
+              {properties.map(p => (
+                <option key={p.id} value={p.id}>{p.title} - UGX {p.rentUgx.toLocaleString()}/mo ({p.tenant})</option>
               ))}
             </select>
 
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
-                🗓️ Tick Month(s) You Are Paying For:
-              </label>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>🗓️ Tick Month(s) You Are Paying For:</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                 {availableMonths.map((m) => {
                   const isSelected = selectedMonths.includes(m.id);
@@ -236,40 +207,23 @@ function TenantPortal({ onNewPayment }) {
             </div>
 
             <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '13px', color: '#166534', marginBottom: '4px' }}>
-                Selected: <strong>{selectedMonths.length} Month(s)</strong>
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d' }}>
-                UGX {totalAmountDue.toLocaleString()}
-              </div>
+              <div style={{ fontSize: '13px', color: '#166534', marginBottom: '4px' }}>Selected: <strong>{selectedMonths.length} Month(s)</strong></div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d' }}>UGX {totalAmountDue.toLocaleString()}</div>
             </div>
 
             {paymentStatus === 'idle' && (
               <form onSubmit={handleTenantPayment}>
                 <div style={{ marginBottom: '14px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Mobile Money Phone Number</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="e.g. 0770000000" 
-                    value={phone} 
-                    onChange={(e) => setPhone(e.target.value)} 
-                    style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box', fontSize: '14px', backgroundColor: 'white' }}
-                  />
+                  <input type="text" required placeholder="e.g. 0770000000" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box', fontSize: '14px' }} />
                 </div>
-
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Payment Network</label>
-                  <select 
-                    value={provider} 
-                    onChange={(e) => setProvider(e.target.value)}
-                    style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px', backgroundColor: 'white' }}
-                  >
+                  <select value={provider} onChange={(e) => setProvider(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}>
                     <option value="MTN Mobile Money">MTN Mobile Money</option>
                     <option value="Airtel Money">Airtel Money</option>
                   </select>
                 </div>
-
                 <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#0f766e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
                   Pay UGX {totalAmountDue.toLocaleString()} Now
                 </button>
@@ -279,7 +233,7 @@ function TenantPortal({ onNewPayment }) {
             {paymentStatus === 'processing' && (
               <div style={{ textAlign: 'center', padding: '30px 0' }}>
                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f766e', marginBottom: '8px' }}>Sending Mobile Money Prompt...</div>
-                <p style={{ color: '#6b7280', fontSize: '14px' }}>Please check your phone (<strong>{phone}</strong>) and enter your PIN to authorize payment for <strong>{selectedMonths.length} month(s)</strong>.</p>
+                <p style={{ color: '#6b7280', fontSize: '14px' }}>Please check your phone (<strong>{phone}</strong>) and enter your PIN.</p>
               </div>
             )}
           </>
@@ -289,8 +243,7 @@ function TenantPortal({ onNewPayment }) {
   );
 }
 
-// --- LANDLORD ADMIN LOGIN PAGE ---
-function AdminLogin({ isAuthenticated, setIsAuthenticated }) {
+function AdminLogin({ isAuthenticated, setIsAuthenticated, adminPassword }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
@@ -298,7 +251,7 @@ function AdminLogin({ isAuthenticated, setIsAuthenticated }) {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'beverly2026') {
+    if (username === 'admin' && password === adminPassword) {
       setIsAuthenticated(true);
       setError(false);
       navigate('/admin');
@@ -307,39 +260,23 @@ function AdminLogin({ isAuthenticated, setIsAuthenticated }) {
     }
   };
 
-  if (isAuthenticated) {
-    return <Navigate to="/admin" replace />;
-  }
+  if (isAuthenticated) return <Navigate to="/admin" replace />;
 
   return (
     <main style={{ maxWidth: '380px', margin: '50px auto', padding: '20px' }}>
-      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '28px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '28px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
         <h2 style={{ margin: '0 0 8px 0', color: '#111827', fontSize: '20px' }}>🔒 Landlord Portal Login</h2>
-        <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '20px' }}>Authorized access only for property administrators.</p>
+        <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '20px' }}>Authorized access for property administrators.</p>
 
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: '14px' }}>
             <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Username</label>
-            <input 
-              type="text" 
-              required
-              placeholder="admin" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}
-            />
+            <input type="text" required placeholder="admin" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
           </div>
 
           <div style={{ marginBottom: '16px' }}>
             <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Password</label>
-            <input 
-              type="password" 
-              required
-              placeholder="Password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}
-            />
+            <input type="password" required placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
           </div>
 
           {error && <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>Invalid Username or Password!</p>}
@@ -353,19 +290,54 @@ function AdminLogin({ isAuthenticated, setIsAuthenticated }) {
   );
 }
 
-// --- PROTECTED LANDLORD DASHBOARD PAGE ---
-function AdminDashboard({ isAuthenticated, setIsAuthenticated, transactions, notifications }) {
-  if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
-  }
+function AdminDashboard({ isAuthenticated, setIsAuthenticated, properties, setProperties, transactions, notifications, adminPassword, setAdminPassword }) {
+  const [newTitle, setNewTitle] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [newRent, setNewRent] = useState('');
+  const [newTenant, setNewTenant] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  
+  const [newPassInput, setNewPassInput] = useState('');
+  const [passMsg, setPassMsg] = useState('');
+
+  if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
+
+  const handleAddUnit = (e) => {
+    e.preventDefault();
+    if (!newTitle || !newRent) return;
+
+    const newUnitObj = {
+      id: `PROP-${100 + properties.length + 1}`,
+      title: newTitle,
+      location: newLocation || 'Kampala',
+      rentUgx: parseInt(newRent, 10),
+      tenant: newTenant || 'Vacant',
+      phone: newPhone || 'N/A'
+    };
+
+    setProperties([...properties, newUnitObj]);
+    setNewTitle(''); setNewLocation(''); setNewRent(''); setNewTenant(''); setNewPhone('');
+  };
+
+  const handlePasswordChange = (e) => {
+    e.preventDefault();
+    if (newPassInput.trim()) {
+      setAdminPassword(newPassInput.trim());
+      setPassMsg('Password updated successfully!');
+      setNewPassInput('');
+      setTimeout(() => setPassMsg(''), 3000);
+    }
+  };
+
+  const handleDeleteUnit = (id) => {
+    setProperties(properties.filter(p => p.id !== id));
+  };
 
   return (
-    <main style={{ maxWidth: '900px', margin: '30px auto', padding: '20px' }}>
+    <main style={{ maxWidth: '980px', margin: '30px auto', padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ margin: 0, color: '#ffffff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Landlord Control Panel</h2>
-        <button 
-          onClick={() => setIsAuthenticated(false)}
-          style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+        <button onClick={() => setIsAuthenticated(false)} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
           Logout
         </button>
       </div>
@@ -379,15 +351,62 @@ function AdminDashboard({ isAuthenticated, setIsAuthenticated, transactions, not
         </div>
       )}
 
-      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-        <h3 style={{ margin: '0 0 16px 0', color: '#374151' }}>Rent Collection History</h3>
+      {/* --- SECTION 1: ADD NEW HOUSING UNIT --- */}
+      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', marginBottom: '30px' }}>
+        <h3 style={{ margin: '0 0 16px 0', color: '#0f766e' }}>➕ Add New Housing Unit</h3>
+        <form onSubmit={handleAddUnit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+          <input type="text" required placeholder="Unit Title (e.g. Unit D3)" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+          <input type="text" placeholder="Location (e.g. Kololo)" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+          <input type="number" required placeholder="Monthly Rent (UGX)" value={newRent} onChange={(e) => setNewRent(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+          <input type="text" placeholder="Tenant Name" value={newTenant} onChange={(e) => setNewTenant(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+          <input type="text" placeholder="Tenant Phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+          <button type="submit" style={{ padding: '10px', backgroundColor: '#0f766e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+            Add Unit
+          </button>
+        </form>
+      </div>
+
+      {/* --- SECTION 2: PROPERTY LISTING & MANAGEMENT --- */}
+      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', marginBottom: '30px' }}>
+        <h3 style={{ margin: '0 0 16px 0', color: '#374151' }}>🏢 Active Property Units ({properties.length})</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
           <thead>
             <tr style={{ backgroundColor: '#f9fafb', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
-              <th style={{ padding: '12px' }}>Transaction ID</th>
+              <th style={{ padding: '12px' }}>Unit ID</th>
+              <th style={{ padding: '12px' }}>Title & Location</th>
+              <th style={{ padding: '12px' }}>Monthly Rent (UGX)</th>
+              <th style={{ padding: '12px' }}>Current Tenant</th>
+              <th style={{ padding: '12px' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {properties.map((p) => (
+              <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <td style={{ padding: '12px', fontWeight: 'bold' }}>{p.id}</td>
+                <td style={{ padding: '12px' }}>{p.title} <br/><span style={{ fontSize: '12px', color: '#6b7280' }}>{p.location}</span></td>
+                <td style={{ padding: '12px', color: '#15803d', fontWeight: 'bold' }}>UGX {p.rentUgx.toLocaleString()}</td>
+                <td style={{ padding: '12px' }}>{p.tenant} ({p.phone})</td>
+                <td style={{ padding: '12px' }}>
+                  <button onClick={() => handleDeleteUnit(p.id)} style={{ padding: '4px 10px', background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* --- SECTION 3: RENT COLLECTION HISTORY --- */}
+      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', marginBottom: '30px' }}>
+        <h3 style={{ margin: '0 0 16px 0', color: '#374151' }}>📊 Rent Collection Logs</h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f9fafb', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
+              <th style={{ padding: '12px' }}>Txn ID</th>
               <th style={{ padding: '12px' }}>Tenant</th>
               <th style={{ padding: '12px' }}>Unit</th>
-              <th style={{ padding: '12px' }}>Month(s) Paid</th>
+              <th style={{ padding: '12px' }}>Months Paid</th>
               <th style={{ padding: '12px' }}>Amount</th>
               <th style={{ padding: '12px' }}>Network</th>
             </tr>
@@ -406,13 +425,33 @@ function AdminDashboard({ isAuthenticated, setIsAuthenticated, transactions, not
           </tbody>
         </table>
       </div>
+
+      {/* --- SECTION 4: CHANGE ADMIN PASSWORD --- */}
+      <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '24px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+        <h3 style={{ margin: '0 0 12px 0', color: '#111827' }}>🔑 Change Admin Password</h3>
+        <form onSubmit={handlePasswordChange} style={{ display: 'flex', gap: '12px', maxWidth: '420px' }}>
+          <input 
+            type="password" 
+            required 
+            placeholder="Enter new admin password" 
+            value={newPassInput} 
+            onChange={(e) => setNewPassInput(e.target.value)} 
+            style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} 
+          />
+          <button type="submit" style={{ padding: '10px 16px', backgroundColor: '#111827', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+            Update Password
+          </button>
+        </form>
+        {passMsg && <p style={{ color: '#16a34a', fontSize: '13px', marginTop: '8px', fontWeight: 'bold' }}>{passMsg}</p>}
+      </div>
     </main>
   );
 }
 
-// --- MAIN APP COMPONENT ---
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('beverly2026');
+  const [properties, setProperties] = useState(defaultProperties);
   const [notifications, setNotifications] = useState([]);
   const [transactions, setTransactions] = useState([
     { id: 'TXN-9021', tenant: 'Abram Carter', unit: 'Beverly Heights - Unit A1', monthsPaid: 'September 2026', amount: 1800000, provider: 'MTN Mobile Money', time: 'Yesterday' }
@@ -451,9 +490,9 @@ export default function App() {
         </header>
 
         <Routes>
-          <Route path="/" element={<TenantPortal onNewPayment={handleNewPayment} />} />
-          <Route path="/admin/login" element={<AdminLogin isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />} />
-          <Route path="/admin" element={<AdminDashboard isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} transactions={transactions} notifications={notifications} />} />
+          <Route path="/" element={<TenantPortal properties={properties} onNewPayment={handleNewPayment} />} />
+          <Route path="/admin/login" element={<AdminLogin isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} adminPassword={adminPassword} />} />
+          <Route path="/admin" element={<AdminDashboard isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} properties={properties} setProperties={setProperties} transactions={transactions} notifications={notifications} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
