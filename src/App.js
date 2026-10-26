@@ -1,220 +1,242 @@
 import React, { useState } from 'react';
 
-function App() {
-  const [view, setView] = useState('tenant'); // 'tenant' or 'admin'
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [adminPinInput, setAdminPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
+const initialProperties = [
+  { id: 'PROP-101', title: 'Beverly Heights - Unit A1', location: 'Kololo, Kampala', rentUgx: 1800000, status: 'Occupied', tenant: 'Abram Carter', phone: '+256770000001' },
+  { id: 'PROP-102', title: 'Beverly Suites - Unit B4', location: 'Naalya, Kampala', rentUgx: 850000, status: 'Occupied', tenant: 'Kiko Housing', phone: '+256750000002' },
+  { id: 'PROP-103', title: 'Beverly Manor - Unit C2', location: 'Ntinda, Kampala', rentUgx: 1200000, status: 'Vacant', tenant: 'N/A', phone: 'N/A' },
+  { id: 'PROP-104', title: 'Beverly Villa - Unit 05', location: 'Muyenga, Kampala', rentUgx: 2500000, status: 'Occupied', tenant: 'Sarah N', phone: '+256780000003' },
+  { id: 'PROP-105', title: 'Beverly Haven - Unit D1', location: 'Entebbe Road', rentUgx: 950000, status: 'Pending Maintenance', tenant: 'David O', phone: '+256700000004' },
+];
 
-  // Tenant Form State
-  const [tenantName, setTenantName] = useState('');
-  const [houseNo, setHouseNo] = useState('');
-  const [phone, setPhone] = useState('');
-  const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
+const initialTransactions = [
+  { id: 'TXN-9021', property: 'Beverly Heights - Unit A1', tenant: 'Abram Carter', amount: 1800000, provider: 'MTN Mobile Money', date: '2026-10-24' },
+  { id: 'TXN-9022', property: 'Beverly Suites - Unit B4', tenant: 'Kiko Housing', amount: 850000, provider: 'Airtel Money', date: '2026-10-22' },
+  { id: 'TXN-9023', property: 'Beverly Villa - Unit 05', tenant: 'Sarah N', amount: 2500000, provider: 'MTN Mobile Money', date: '2026-10-15' },
+];
 
-  // Set your secret Admin PIN here (e.g. '1234' or your custom passcode)
-  const ADMIN_PIN = '1234';
+export default function App() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [properties] = useState(initialProperties);
+  const [transactions, setTransactions] = useState(initialTransactions);
+  
+  // Payment Modal States
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [paymentProvider, setPaymentProvider] = useState('MTN Mobile Money');
+  const [paymentStep, setPaymentStep] = useState('input');
 
-  // Sample ledger records for Admin View
-  const [payments] = useState([
-    { id: 1, tenant: 'John Mugisha', house: 'Unit 4B', amount: 450000, date: '2026-10-20', status: 'PAID' },
-    { id: 2, tenant: 'Sarah Musoke', house: 'Unit 2A', amount: 500000, date: '2026-10-22', status: 'PAID' }
-  ]);
+  const totalRevenue = transactions.reduce((acc, curr) => acc + curr.amount, 0);
 
-  const handleMtnPayment = async (e) => {
+  const handlePayRent = (e) => {
     e.preventDefault();
-    setLoading(true);
-    setStatusMessage('Initiating MTN MoMo Prompt...');
+    setPaymentStep('processing');
 
-    try {
-      const response = await fetch('/api/pay-mtn-rent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantName, houseNo, phone, amount }),
-      });
+    setTimeout(() => {
+      const newTxn = {
+        id: `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
+        property: selectedProperty.title,
+        tenant: selectedProperty.tenant !== 'N/A' ? selectedProperty.tenant : 'Direct Payment',
+        amount: selectedProperty.rentUgx,
+        provider: paymentProvider,
+        date: new Date().toISOString().split('T')[0],
+      };
 
-      const data = await response.json();
-      if (data.success) {
-        setStatusMessage('📱 Check your phone! Enter your MTN MoMo PIN to complete payment.');
-      } else {
-        setStatusMessage('❌ Error initiating payment. Please check phone number.');
-      }
-    } catch (err) {
-      setStatusMessage('❌ Server connection error.');
-    } finally {
-      setLoading(false);
-    }
+      setTransactions([newTxn, ...transactions]);
+      setPaymentStep('success');
+    }, 2000);
   };
 
-  const handleAdminLogin = (e) => {
-    e.preventDefault();
-    if (adminPinInput === ADMIN_PIN) {
-      setIsAdminAuthenticated(true);
-      setView('admin');
-      setPinError('');
-      setAdminPinInput('');
-    } else {
-      setPinError('Incorrect Admin PIN. Access Denied.');
-    }
-  };
-
-  const handleAdminLogout = () => {
-    setIsAdminAuthenticated(false);
-    setView('tenant');
+  const closeModal = () => {
+    setSelectedProperty(null);
+    setPaymentStep('input');
+    setPaymentPhone('');
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', margin: 0 }}>
-      {/* Navigation Header */}
-      <nav style={{ backgroundColor: '#0f172a', padding: '1rem 2rem', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>
-          BEVERLY AND KIKO HOUSING PROPERTY UGANDA
-        </h1>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            onClick={() => setView('tenant')} 
-            style={{ padding: '8px 16px', backgroundColor: view === 'tenant' ? '#2563eb' : '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-            Tenant Portal
-          </button>
-          
-          {isAdminAuthenticated ? (
-            <button 
-              onClick={handleAdminLogout} 
-              style={{ padding: '8px 16px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Logout Admin
-            </button>
-          ) : (
-            <button 
-              onClick={() => setView('admin_login')} 
-              style={{ padding: '8px 16px', backgroundColor: view === 'admin_login' || view === 'admin' ? '#2563eb' : '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Admin Login
-            </button>
-          )}
+    <div style={{ fontFamily: 'sans-serif', backgroundColor: '#f3f4f6', minHeight: '100vh', color: '#1f2937' }}>
+      {/* Header Bar */}
+      <header style={{ backgroundColor: '#0f766e', color: 'white', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>Beverly Kiko Housing Uganda</h1>
+          <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.9 }}>Property & Rent Management System</p>
         </div>
+        <div style={{ textAlign: 'right', fontSize: '14px' }}>
+          <span style={{ fontWeight: '600', display: 'block' }}>Admin Dashboard</span>
+          <span style={{ fontSize: '12px', opacity: 0.8 }}>Kampala, Uganda</span>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', padding: '0 24px', display: 'flex', gap: '24px' }}>
+        {['overview', 'properties', 'transactions'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '14px 4px',
+              border: 'none',
+              background: 'none',
+              borderBottom: activeTab === tab ? '3px solid #0f766e' : '3px solid transparent',
+              color: activeTab === tab ? '#0f766e' : '#6b7280',
+              fontWeight: activeTab === tab ? 'bold' : 'normal',
+              textTransform: 'capitalize',
+              cursor: 'pointer'
+            }}
+          >
+            {tab}
+          </button>
+        ))}
       </nav>
 
-      {/* Main Container */}
-      <main style={{ maxWidth: '600px', margin: '2rem auto', padding: '0 1rem' }}>
-        {view === 'tenant' && (
-          /* TENANT PORTAL VIEW */
-          <div style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ marginTop: 0, color: '#1e293b' }}>Pay Rent via MTN Mobile Money</h2>
-            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Enter details below to receive a direct payment prompt on your MTN phone screen.</p>
-
-            <form onSubmit={handleMtnPayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
-              <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.4rem', color: '#334155' }}>Tenant Full Name</label>
-                <input type="text" placeholder="e.g. John Mugisha" value={tenantName} onChange={(e) => setTenantName(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.4rem', color: '#334155' }}>House / Unit Number</label>
-                <input type="text" placeholder="e.g. Unit 4B" value={houseNo} onChange={(e) => setHouseNo(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.4rem', color: '#334155' }}>MTN Phone Number</label>
-                <input type="tel" placeholder="077... or 078..." value={phone} onChange={(e) => setPhone(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.4rem', color: '#334155' }}>Amount (UGX)</label>
-                <input type="number" placeholder="450000" value={amount} onChange={(e) => setAmount(e.target.value)} required style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
-              </div>
-
-              <button type="submit" disabled={loading} style={{ padding: '12px', backgroundColor: '#ffcc00', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', marginTop: '0.5rem' }}>
-                {loading ? 'Sending Prompt...' : 'PAY RENT VIA MTN MOMO'}
-              </button>
-            </form>
-
-            {statusMessage && (
-              <div style={{ marginTop: '1rem', padding: '10px', backgroundColor: '#f1f5f9', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
-                {statusMessage}
-              </div>
-            )}
+      {/* Main Content */}
+      <main style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Metric Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Total Units</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{properties.length}</div>
           </div>
-        )}
-
-        {view === 'admin_login' && !isAdminAuthenticated && (
-          /* ADMIN LOGIN FORM GATEWAY */
-          <div style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-            <h2 style={{ marginTop: 0, color: '#1e293b' }}>Administrator Login</h2>
-            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Restricted Area. Please enter your secret Administrator PIN to access property management records.</p>
-
-            <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem', maxWidth: '300px', margin: '1.5rem auto 0' }}>
-              <input 
-                type="password" 
-                placeholder="Enter Admin PIN" 
-                value={adminPinInput} 
-                onChange={(e) => setAdminPinInput(e.target.value)} 
-                required 
-                style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '1.1rem', boxSizing: 'border-box' }}
-              />
-
-              <button type="submit" style={{ padding: '12px', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                UNLOCK DASHBOARD
-              </button>
-            </form>
-
-            {pinError && (
-              <p style={{ color: '#dc2626', fontWeight: 'bold', marginTop: '1rem', fontSize: '0.9rem' }}>{pinError}</p>
-            )}
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Occupied Units</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>
+              {properties.filter(p => p.status === 'Occupied').length}
+            </div>
           </div>
-        )}
-
-        {view === 'admin' && isAdminAuthenticated && (
-          /* PROTECTED ADMIN DASHBOARD VIEW */
-          <div style={{ backgroundColor: '#ffffff', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ marginTop: 0, color: '#1e293b' }}>Property Overview & Collections</h2>
-              <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                🔒 Secure Admin Mode
-              </span>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ color: '#6b7280', fontSize: '14px', marginBottom: '8px' }}>Total Rent Collected</div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f766e' }}>
+              UGX {totalRevenue.toLocaleString()}
             </div>
+          </div>
+        </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', marginTop: '1rem' }}>
-              <div style={{ flex: 1, backgroundColor: '#eff6ff', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid #2563eb' }}>
-                <span style={{ fontSize: '0.85rem', color: '#1e40af' }}>Total Rent Collected</span>
-                <h3 style={{ margin: '0.5rem 0 0', color: '#1e3a8a' }}>UGX 950,000</h3>
-              </div>
-              <div style={{ flex: 1, backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid #16a34a' }}>
-                <span style={{ fontSize: '0.85rem', color: '#166534' }}>Occupied Units</span>
-                <h3 style={{ margin: '0.5rem 0 0', color: '#14532d' }}>8 / 10</h3>
-              </div>
+        {/* Tab Views */}
+        {activeTab !== 'transactions' ? (
+          <section style={{ backgroundColor: 'white', borderRadius: '8px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h2 style={{ fontSize: '18px', margin: '0 0 16px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+              Managed Properties & Mobile Rent Collection
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {properties.map((property) => (
+                <div key={property.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', backgroundColor: '#fafafa' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{property.title}</h3>
+                  <p style={{ margin: '4px 0', color: '#6b7280', fontSize: '14px' }}>📍 {property.location}</p>
+                  <p style={{ margin: '4px 0', fontSize: '14px', fontWeight: 'bold', color: '#0f766e' }}>
+                    Rent: UGX {property.rentUgx.toLocaleString()} / mo
+                  </p>
+                  <p style={{ margin: '4px 0', fontSize: '13px', color: '#4b5563' }}>
+                    Tenant: <strong>{property.tenant}</strong> ({property.phone})
+                  </p>
+                  <button
+                    onClick={() => setSelectedProperty(property)}
+                    style={{
+                      marginTop: '12px',
+                      width: '100%',
+                      padding: '10px',
+                      backgroundColor: '#0f766e',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Collect Rent via Mobile Money
+                  </button>
+                </div>
+              ))}
             </div>
-
-            <h3 style={{ fontSize: '1rem', color: '#334155', marginBottom: '0.5rem' }}>Recent Payment Ledger</h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          </section>
+        ) : (
+          <section style={{ backgroundColor: 'white', borderRadius: '8px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h2 style={{ fontSize: '18px', margin: '0 0 16px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+              Recent Rent Transactions
+            </h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>
-                  <th style={{ padding: '8px' }}>Tenant</th>
-                  <th style={{ padding: '8px' }}>House</th>
-                  <th style={{ padding: '8px' }}>Amount</th>
-                  <th style={{ padding: '8px' }}>Status</th>
+                <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '12px' }}>Transaction ID</th>
+                  <th style={{ padding: '12px' }}>Property</th>
+                  <th style={{ padding: '12px' }}>Tenant</th>
+                  <th style={{ padding: '12px' }}>Provider</th>
+                  <th style={{ padding: '12px' }}>Amount</th>
+                  <th style={{ padding: '12px' }}>Date</th>
                 </tr>
               </thead>
               <tbody>
-                {payments.map((p) => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '8px', fontWeight: '500' }}>{p.tenant}</td>
-                    <td style={{ padding: '8px' }}>{p.house}</td>
-                    <td style={{ padding: '8px' }}>UGX {p.amount.toLocaleString()}</td>
-                    <td style={{ padding: '8px' }}>
-                      <span style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                        {p.status}
-                      </span>
-                    </td>
+                {transactions.map((txn) => (
+                  <tr key={txn.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '12px', fontWeight: 'bold' }}>{txn.id}</td>
+                    <td style={{ padding: '12px' }}>{txn.property}</td>
+                    <td style={{ padding: '12px' }}>{txn.tenant}</td>
+                    <td style={{ padding: '12px' }}>{txn.provider}</td>
+                    <td style={{ padding: '12px', color: '#16a34a', fontWeight: 'bold' }}>UGX {txn.amount.toLocaleString()}</td>
+                    <td style={{ padding: '12px', color: '#6b7280' }}>{txn.date}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </section>
         )}
       </main>
+
+      {/* Payment Modal */}
+      {selectedProperty && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '24px', width: '90%', maxWidth: '420px' }}>
+            {paymentStep === 'input' && (
+              <form onSubmit={handlePayRent}>
+                <h3 style={{ marginTop: 0 }}>Pay Rent - {selectedProperty.title}</h3>
+                <p style={{ color: '#6b7280', fontSize: '14px' }}>Amount Due: <strong>UGX {selectedProperty.rentUgx.toLocaleString()}</strong></p>
+                
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', marginBottom: '4px' }}>Ugandan Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 0770000000"
+                    value={paymentPhone}
+                    onChange={(e) => setPaymentPhone(e.target.value)}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '18px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', marginBottom: '4px' }}>Payment Provider</label>
+                  <select
+                    value={paymentProvider}
+                    onChange={(e) => setPaymentProvider(e.target.value)}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' }}
+                  >
+                    <option value="MTN Mobile Money">MTN Mobile Money</option>
+                    <option value="Airtel Money">Airtel Money</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={closeModal} style={{ padding: '8px 16px', background: '#ccc', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" style={{ padding: '8px 16px', background: '#0f766e', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Send Prompt</button>
+                </div>
+              </form>
+            )}
+
+            {paymentStep === 'processing' && (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <p style={{ fontWeight: 'bold' }}>Sending Mobile Money Prompt...</p>
+                <p style={{ fontSize: '13px', color: '#6b7280' }}>Please approve the PIN request on phone {paymentPhone}</p>
+              </div>
+            )}
+
+            {paymentStep === 'success' && (
+              <div style={{ textAlign: 'center', padding: '10px 0' }}>
+                <h3 style={{ color: '#16a34a' }}>Payment Received!</h3>
+                <p style={{ fontSize: '14px' }}>Rent paid successfully via {paymentProvider}.</p>
+                <button onClick={closeModal} style={{ padding: '8px 16px', background: '#0f766e', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '12px' }}>Done</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-export default App;
