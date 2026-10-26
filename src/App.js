@@ -33,8 +33,11 @@ function GospelMusicPlayer() {
       {/* --- UPDATE THIS LINE TO YOUR LOCAL FILE --- */}
       <audio 
         ref={audioRef} 
-        src="/grace-idowu-dont-give-up.mp3" 
-        loop 
+        src="<audio 
+  ref={audioRef} 
+  src="https://www.ceenaija.com/wp-content/uploads/2024/09/Grace_Idowu_-_God_Dont_Give_Up_On_Me_Yet_CeeNaija.com_.mp3" 
+  loop 
+/> 
       />
       
       <span style={{ fontSize: '13px', fontWeight: 'bold' }}>🎵 Grace Idowu - Don't Give Up On Me</span>
