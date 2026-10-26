@@ -8,23 +8,56 @@ const initialProperties = [
   { id: 'PROP-104', title: 'Beverly Villa - Unit 05', location: 'Muyenga, Kampala', rentUgx: 2500000, tenant: 'Sarah N', phone: '0780000003' },
 ];
 
-// --- TENANT PORTAL PAGE ---
+const availableMonths = [
+  { id: 'Jan-2026', label: 'January 2026' },
+  { id: 'Feb-2026', label: 'February 2026' },
+  { id: 'Mar-2026', label: 'March 2026' },
+  { id: 'Apr-2026', label: 'April 2026' },
+  { id: 'May-2026', label: 'May 2026' },
+  { id: 'Jun-2026', label: 'June 2026' },
+  { id: 'Jul-2026', label: 'July 2026' },
+  { id: 'Aug-2026', label: 'August 2026' },
+  { id: 'Sep-2026', label: 'September 2026' },
+  { id: 'Oct-2026', label: 'October 2026' },
+  { id: 'Nov-2026', label: 'November 2026' },
+  { id: 'Dec-2026', label: 'December 2026' },
+];
+
+// --- TENANT PORTAL PAGE WITH CALENDAR ---
 function TenantPortal({ onNewPayment }) {
   const [selectedUnit, setSelectedUnit] = useState(initialProperties[0]);
+  const [selectedMonths, setSelectedMonths] = useState(['Oct-2026']); // Default current month
   const [phone, setPhone] = useState('');
   const [provider, setProvider] = useState('MTN Mobile Money');
   const [paymentStatus, setPaymentStatus] = useState('idle');
 
+  const toggleMonth = (monthId) => {
+    if (selectedMonths.includes(monthId)) {
+      if (selectedMonths.length > 1) {
+        setSelectedMonths(selectedMonths.filter(m => m !== monthId));
+      }
+    } else {
+      setSelectedMonths([...selectedMonths, monthId]);
+    }
+  };
+
+  const totalAmountDue = selectedUnit.rentUgx * selectedMonths.length;
+
   const handleTenantPayment = (e) => {
     e.preventDefault();
+    if (selectedMonths.length === 0) return;
+
     setPaymentStatus('processing');
 
     setTimeout(() => {
+      const monthNames = selectedMonths.map(m => availableMonths.find(am => am.id === m)?.label).join(', ');
+
       const newTxn = {
         id: `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
         unit: selectedUnit.title,
         tenant: selectedUnit.tenant,
-        amount: selectedUnit.rentUgx,
+        monthsPaid: monthNames,
+        amount: totalAmountDue,
         provider: provider,
         time: 'Just Now'
       };
@@ -35,24 +68,66 @@ function TenantPortal({ onNewPayment }) {
   };
 
   return (
-    <main style={{ maxWidth: '480px', margin: '30px auto', padding: '20px' }}>
+    <main style={{ maxWidth: '520px', margin: '30px auto', padding: '20px' }}>
       <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
         <h2 style={{ margin: '0 0 6px 0', color: '#0f766e', fontSize: '20px' }}>Pay Rent Online</h2>
-        <p style={{ margin: '0 0 20px 0', color: '#6b7280', fontSize: '14px' }}>Select your housing unit and complete payment via Mobile Money.</p>
+        <p style={{ margin: '0 0 20px 0', color: '#6b7280', fontSize: '14px' }}>Select your unit, tick the month(s) you are paying for, and approve via Mobile Money.</p>
 
+        {/* Housing Unit Selection */}
         <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Select Your Housing Unit</label>
         <select 
           onChange={(e) => setSelectedUnit(initialProperties.find(p => p.id === e.target.value))}
-          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', marginBottom: '16px', fontSize: '14px' }}
+          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', marginBottom: '20px', fontSize: '14px' }}
         >
           {initialProperties.map(p => (
             <option key={p.id} value={p.id}>{p.title} - {p.tenant}</option>
           ))}
         </select>
 
+        {/* Calendar / Month Ticking Grid */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
+            🗓️ Tick Month(s) You Are Paying For:
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {availableMonths.map((m) => {
+              const isSelected = selectedMonths.includes(m.id);
+              return (
+                <button
+                  type="button"
+                  key={m.id}
+                  onClick={() => toggleMonth(m.id)}
+                  style={{
+                    padding: '10px 6px',
+                    borderRadius: '6px',
+                    border: isSelected ? '2px solid #0f766e' : '1px solid #e5e7eb',
+                    backgroundColor: isSelected ? '#f0fdf4' : '#fafafa',
+                    color: isSelected ? '#0f766e' : '#4b5563',
+                    fontWeight: isSelected ? 'bold' : 'normal',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span>{isSelected ? '✓' : '☐'}</span>
+                  <span>{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Rent Calculation Banner */}
         <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '13px', color: '#166534' }}>Monthly Rent Due</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d' }}>UGX {selectedUnit.rentUgx.toLocaleString()}</div>
+          <div style={{ fontSize: '13px', color: '#166534', marginBottom: '4px' }}>
+            Selected: <strong>{selectedMonths.length} Month(s)</strong> ({selectedMonths.map(m => availableMonths.find(am => am.id === m)?.label.split(' ')[0]).join(', ')})
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d' }}>
+            UGX {totalAmountDue.toLocaleString()}
+          </div>
         </div>
 
         {paymentStatus === 'idle' && (
@@ -82,7 +157,7 @@ function TenantPortal({ onNewPayment }) {
             </div>
 
             <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#0f766e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
-              Pay UGX {selectedUnit.rentUgx.toLocaleString()} Now
+              Pay UGX {totalAmountDue.toLocaleString()} Now
             </button>
           </form>
         )}
@@ -90,14 +165,16 @@ function TenantPortal({ onNewPayment }) {
         {paymentStatus === 'processing' && (
           <div style={{ textAlign: 'center', padding: '30px 0' }}>
             <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f766e', marginBottom: '8px' }}>Sending Mobile Money Prompt...</div>
-            <p style={{ color: '#6b7280', fontSize: '14px' }}>Please check your mobile phone (<strong>{phone}</strong>) and enter your PIN to approve the payment.</p>
+            <p style={{ color: '#6b7280', fontSize: '14px' }}>Please check your mobile phone (<strong>{phone}</strong>) and enter your PIN to approve payment for <strong>{selectedMonths.length} month(s)</strong>.</p>
           </div>
         )}
 
         {paymentStatus === 'success' && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <h3 style={{ color: '#16a34a', margin: '0 0 8px 0' }}>Payment Successful!</h3>
-            <p style={{ color: '#4b5563', fontSize: '14px' }}>Thank you! Your rent payment has been logged and sent to the landlord.</p>
+            <p style={{ color: '#4b5563', fontSize: '14px' }}>
+              Thank you! Rent payment of <strong>UGX {totalAmountDue.toLocaleString()}</strong> for <strong>{selectedMonths.length} month(s)</strong> has been recorded and sent to the landlord.
+            </p>
             <button onClick={() => setPaymentStatus('idle')} style={{ padding: '10px 20px', background: '#0f766e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '12px' }}>
               Back to Rent Portal
             </button>
@@ -117,7 +194,6 @@ function AdminLogin({ isAuthenticated, setIsAuthenticated }) {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Default credentials
     if (username === 'admin' && password === 'beverly2026') {
       setIsAuthenticated(true);
       setError(false);
@@ -143,7 +219,7 @@ function AdminLogin({ isAuthenticated, setIsAuthenticated }) {
             <input 
               type="text" 
               required
-              placeholder="e.g. admin" 
+              placeholder="admin" 
               value={username} 
               onChange={(e) => setUsername(e.target.value)}
               style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}
@@ -206,6 +282,7 @@ function AdminDashboard({ isAuthenticated, setIsAuthenticated, transactions, not
             <tr style={{ backgroundColor: '#f9fafb', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
               <th style={{ padding: '12px' }}>Transaction ID</th>
               <th style={{ padding: '12px' }}>Unit</th>
+              <th style={{ padding: '12px' }}>Month(s) Paid</th>
               <th style={{ padding: '12px' }}>Amount</th>
               <th style={{ padding: '12px' }}>Network</th>
               <th style={{ padding: '12px' }}>Time</th>
@@ -216,6 +293,7 @@ function AdminDashboard({ isAuthenticated, setIsAuthenticated, transactions, not
               <tr key={t.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <td style={{ padding: '12px', fontWeight: 'bold' }}>{t.id}</td>
                 <td style={{ padding: '12px' }}>{t.unit}</td>
+                <td style={{ padding: '12px', color: '#0f766e', fontWeight: '500' }}>{t.monthsPaid || 'October 2026'}</td>
                 <td style={{ padding: '12px', color: '#16a34a', fontWeight: 'bold' }}>UGX {t.amount.toLocaleString()}</td>
                 <td style={{ padding: '12px' }}>{t.provider}</td>
                 <td style={{ padding: '12px', color: '#6b7280' }}>{t.time}</td>
@@ -233,12 +311,12 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [transactions, setTransactions] = useState([
-    { id: 'TXN-9021', unit: 'Beverly Heights - Unit A1', amount: 1800000, provider: 'MTN Mobile Money', time: 'Yesterday' }
+    { id: 'TXN-9021', unit: 'Beverly Heights - Unit A1', monthsPaid: 'September 2026', amount: 1800000, provider: 'MTN Mobile Money', time: 'Yesterday' }
   ]);
 
   const handleNewPayment = (newTxn) => {
     setTransactions(prev => [newTxn, ...prev]);
-    setNotifications(prev => [`Payment Received: UGX ${newTxn.amount.toLocaleString()} for ${newTxn.unit}`, ...prev]);
+    setNotifications(prev => [`Payment Received: UGX ${newTxn.amount.toLocaleString()} from ${newTxn.tenant} for ${newTxn.monthsPaid} (${newTxn.unit})`, ...prev]);
   };
 
   return (
