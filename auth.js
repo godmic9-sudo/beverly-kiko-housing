@@ -1,0 +1,40 @@
+import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+import bcrypt from 'bcryptjs';
+import { query, isThrottled, recordLoginFailure, clearLoginFailures } from './lib/db';
+
+// Compared against when the username doesn't exist, so response time doesn't reveal valid usernames
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 }, // admin stays signed in for 8 hours
+  providers: [
+    Credentials({
+      credentials: { username: {}, password: {} },
+      async authorize(credentials) {
+        const username = String(credentials?.username || '').trim().toLowerCase();
+        const password = String(credentials?.password || '');
+        if (!username || !password) return null;
+
+        if (await isThrottled(username)) return null;
+
+        const { rows } = await query('SELECT username, password_hash FROM admins WHERE username = $1', [username]);
+        const valid = await bcrypt.compare(password, rows[0]?.password_hash || DUMMY_HASH);
+        if (!valid || rows.length === 0) {
+          await recordLoginFailure(username);
+          return null;
+        }
+        await clearLoginFailures(username);
+        return { id: username, name: username };
+      },
+    }),
+  ],
+});
+
+// Use at the top of every admin API route
+export async function requireAdmin() {
+  const session = await auth();
+  return session?.user ? session : null;
+}
