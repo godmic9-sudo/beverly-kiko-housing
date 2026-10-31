@@ -7,7 +7,7 @@ import { MONTHS } from '../lib/months';
 export default function App() {
   const [activeTab, setActiveTab] = useState('tenant');
   
-  // Landlord Auth state.
+  // Landlord Auth state
   const { status: sessionStatus } = useSession();
   const landlordLoggedIn = sessionStatus === 'authenticated';
   const [username, setUsername] = useState('');
@@ -17,6 +17,7 @@ export default function App() {
   // Units state
   const [units, setUnits] = useState([]);
   const [unitsLoading, setUnitsLoading] = useState(true);
+  const [unitsError, setUnitsError] = useState('');
 
   // Tenant Payment state
   const [selectedUnitId, setSelectedUnitId] = useState('1');
@@ -56,14 +57,14 @@ export default function App() {
   // Load units (public list: no tenant details) from the database
   useEffect(() => {
     fetch('/api/units')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.units) {
-          setUnits(d.units);
-          setSelectedUnitId((prev) => (d.units.some((u) => u.id === prev) ? prev : d.units[0]?.id || ''));
-        }
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.units) throw new Error(d.message || 'Could not load units.');
+        setUnits(d.units);
+        setUnitsError('');
+        setSelectedUnitId((prev) => (d.units.some((u) => u.id === prev) ? prev : d.units[0]?.id || ''));
       })
-      .catch(() => {})
+      .catch((err) => setUnitsError(err.message || 'Could not load units.'))
       .finally(() => setUnitsLoading(false));
   }, []);
 
@@ -149,11 +150,28 @@ export default function App() {
   const handleLandlordLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
-    const res = await signIn('credentials', { username, password, redirect: false });
-    if (!res || res.error) {
-      setLoginError('Invalid username or password, or too many attempts. Please try again later.');
-    } else {
-      setPassword('');
+    try {
+      // If the server isn't configured (e.g. AUTH_SECRET missing), say so instead of letting Auth.js take over the page
+      const pre = await fetch('/api/auth/csrf');
+      if (!pre.ok) throw new Error('not-configured');
+      const res = await signIn('credentials', { username, password, redirect: false });
+      if (res?.code === 'server_error') {
+        setLoginError('The server could not reach its database. Check DATABASE_URL in your hosting settings (open /api/health for details).');
+      } else if (!res || res.error) {
+        // Distinguish "wrong password" from "database is down"
+        let dbDown = false;
+        try {
+          const h = await (await fetch('/api/health')).json();
+          dbDown = h?.database?.ok === false;
+        } catch {}
+        setLoginError(dbDown
+          ? 'The server could not reach its database. Check DATABASE_URL in your hosting settings (open /api/health for details).'
+          : 'Invalid username or password, or too many attempts. Please try again in a few minutes.');
+      } else {
+        setPassword('');
+      }
+    } catch {
+      setLoginError('The login service is not set up correctly on the server. Check AUTH_SECRET and DATABASE_URL in your hosting settings (open /api/health for details).');
     }
   };
 
@@ -240,6 +258,8 @@ export default function App() {
                 <h2 style={{ fontSize: '22px', color: '#133e38', marginBottom: '8px' }}>Pay Rent Online</h2>
                 <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>Select your housing unit, tick your months, and pay via Mobile Money.</p>
 
+                {unitsError && <div style={{ backgroundColor: '#f8d7da', color: '#842029', padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '16px' }}>Could not load housing units. Please try again later or contact the landlord.</div>}
+
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#333' }}>Select Housing Unit</label>
                   <select 
@@ -248,6 +268,7 @@ export default function App() {
                     style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', backgroundColor: '#fff' }}
                   >
                     {unitsLoading && <option value="">Loading units...</option>}
+                    {!unitsLoading && units.length === 0 && <option value="">{unitsError || 'No units available yet'}</option>}
                     {units.map(u => (
                       <option key={u.id} value={u.id}>
                         {u.name} - UGX {u.price.toLocaleString()}/mo ({u.location})
