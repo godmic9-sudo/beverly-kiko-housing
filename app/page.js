@@ -7,7 +7,7 @@ import { MONTHS } from '../lib/months';
 export default function App() {
   const [activeTab, setActiveTab] = useState('tenant');
   
-  // Landlord Auth state
+  // Landlord Auth state.
   const { status: sessionStatus } = useSession();
   const landlordLoggedIn = sessionStatus === 'authenticated';
   const [username, setUsername] = useState('');
