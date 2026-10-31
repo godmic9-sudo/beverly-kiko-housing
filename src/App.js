@@ -1,629 +1,444 @@
-import React, { useState, useRef } from 'react';
-// Floating Gospel Ambient Player Component
-function GospelAmbientPlayer() {
-const [isPlaying, setIsPlaying] = useState(false);
-const audioRef = useRef(null);
-const togglePlay = () => {
-if (audioRef.current) {
-if (isPlaying) {
-audioRef.current.pause();
-} else {
-audioRef.current.play().catch((e) => console.log('Audio playback info:', e));
-}
-setIsPlaying(!isPlaying);
-}
-};
-return (
-<div style={{
-position: 'fixed',
-bottom: '15px',
-right: '15px',
-backgroundColor: '#0c5c53',
-color: 'white',
-padding: '8px 14px',
-borderRadius: '30px',
-display: 'flex',
-alignItems: 'center',
-gap: '10px',
-zIndex: 1000,
-boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
-border: '1px solid rgba(255,255,255,0.2)'
-}}>
-<audio 
-ref={audioRef} 
-loop 
-src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" 
-/>
-<div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '500' }}>
-<span>🎵</span>
-<span>Gospel Ambient Player</span>
-</div>
-<button
-onClick={togglePlay}
-style={{
-backgroundColor: 'white',
-color: '#0c5c53',
-border: 'none',
-borderRadius: '20px',
-padding: '4px 12px',
-fontSize: '12px',
-fontWeight: 'bold',
-cursor: 'pointer',
-display: 'flex',
-alignItems: 'center',
-gap: '4px'
-}}
->
-{isPlaying ? '⏸️ Pause' : '▶ Play'}
-</button>
-</div>
-);
-}
+import React, { useState, useEffect, useRef } from 'react';
+
 export default function App() {
-// Navigation & Authentication state
-const [activePortal, setActivePortal] = useState('tenant'); // 'tenant' | 'landlord'
-const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-const [adminPasswordInput, setAdminPasswordInput] = useState('');
-const [authError, setAuthError] = useState('');
-// Initial Housing Units State
-const [units, setUnits] = useState([
-{ id: 1, name: 'Beverly Heights - Unit A1', location: 'Kololo, Kampala', price: 1800000, tenant: 'Abram Carter', tenantPhone: '+256770000001', paidMonths: ['October 2026'] },
-{ id: 2, name: 'Beverly Suites - Unit B4', location: 'Naalya, Kampala', price: 850000, tenant: 'Kiko Housing', tenantPhone: '+256750000002', paidMonths: ['September 2026'] },
-{ id: 3, name: 'Beverly Manor - Unit C2', location: 'Ntinda, Kampala', price: 1200000, tenant: 'N/A', tenantPhone: '', paidMonths: [] },
-{ id: 4, name: 'Beverly Villa - Unit 05', location: 'Muyenga, Kampala', price: 2500000, tenant: 'Sarah Musoke', tenantPhone: '+256780000003', paidMonths: ['October 2026', 'November 2026'] },
-{ id: 5, name: 'Beverly Haven - Unit D1', location: 'Entebbe Road', price: 950000, tenant: 'N/A', tenantPhone: '', paidMonths: [] }
-]);
-// Tenant Payment Form State
-const [selectedUnitId, setSelectedUnitId] = useState(1);
-const [selectedMonths, setSelectedMonths] = useState(['October 2026']);
-const [paymentProvider, setPaymentProvider] = useState('MTN'); // 'MTN' | 'AIRTEL'
-const [phoneNumber, setPhoneNumber] = useState('0770000000');
-const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-const [paymentSuccessMsg, setPaymentSuccessMsg] = useState('');
-// Landlord Add Unit Form State
-const [newUnitName, setNewUnitName] = useState('');
-const [newUnitLocation, setNewUnitLocation] = useState('');
-const [newUnitPrice, setNewUnitPrice] = useState('');
-const [newUnitTenant, setNewUnitTenant] = useState('');
-const monthsList = [
-'January 2026', 'February 2026', 'March 2026',
-'April 2026', 'May 2026', 'June 2026',
-'July 2026', 'August 2026', 'September 2026',
-'October 2026', 'November 2026', 'December 2026'
-];
-// Selected unit details
-const selectedUnitObj = units.find(u => u.id === Number(selectedUnitId)) || units[0];
-const totalPrice = (selectedUnitObj ? selectedUnitObj.price : 0) * selectedMonths.length;
-// Handle Month Toggle for Tenant
-const toggleMonth = (month) => {
-if (selectedMonths.includes(month)) {
-if (selectedMonths.length > 1) {
-setSelectedMonths(selectedMonths.filter(m => m !== month));
-}
-} else {
-setSelectedMonths([...selectedMonths, month]);
-}
-};
-// Process Mobile Money Payment
-const handleMobileMoneyPayment = (e) => {
-e.preventDefault();
-if (!phoneNumber) {
-alert('Please enter a valid Mobile Money Phone Number.');
-return;
-}
-setIsProcessingPayment(true);
-setPaymentSuccessMsg('');
-// Simulate USSD prompt & backend processing
-setTimeout(() => {
-setIsProcessingPayment(false);
-// Record payment in state
-setUnits(prevUnits => prevUnits.map(unit => {
-if (unit.id === selectedUnitObj.id) {
-const updatedMonths = Array.from(new Set([...unit.paidMonths, ...selectedMonths]));
-return { ...unit, paidMonths: updatedMonths };
-}
-return unit;
-}));
-setPaymentSuccessMsg(⁠Success! Payment of UGX ${totalPrice.toLocaleString()} via ${paymentProvider} Money (${phoneNumber}) received for ${selectedUnitObj.name}. Receipt sent to your phone!⁠);
-}, 2500);
-};
-// Handle Landlord Login
-const handleAdminLogin = (e) => {
-e.preventDefault();
-if (adminPasswordInput === 'admin' || adminPasswordInput === '1234' || adminPasswordInput === 'beverly') {
-setIsAdminLoggedIn(true);
-setAuthError('');
-} else {
-setAuthError('Incorrect Password! (Default pass: admin)');
-}
-};
-// Handle Add Unit by Landlord
-const handleAddUnit = (e) => {
-e.preventDefault();
-if (!newUnitName || !newUnitPrice) {
-alert('Please provide at least a unit name and monthly rent price.');
-return;
-}
-const newUnit = {
-id: Date.now(),
-name: newUnitName,
-location: newUnitLocation || 'Kampala, Uganda',
-price: Number(newUnitPrice),
-tenant: newUnitTenant || 'N/A',
-tenantPhone: '',
-paidMonths: []
-};
-setUnits([...units, newUnit]);
-setNewUnitName('');
-setNewUnitLocation('');
-setNewUnitPrice('');
-setNewUnitTenant('');
-alert('New Housing Unit successfully added to system!');
-};
-// Total Rent Calculations for Admin
-const totalUnitsCount = units.length;
-const occupiedUnitsCount = units.filter(u => u.tenant && u.tenant !== 'N/A').length;
-const totalRentCollected = units.reduce((sum, u) => sum + (u.price * u.paidMonths.length), 0);
-return (
-<div style={{
-fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-backgroundColor: '#0d3834',
-minHeight: '100vh',
-color: '#1f2937',
-paddingBottom: '90px'
-}}>
-{/* Top Header Banner */}
-<header style={{
-backgroundColor: '#0c5c53',
-color: 'white',
-padding: '20px 24px',
-display: 'flex',
-justify: 'space-between',
-alignItems: 'center',
-boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-}}>
-<div>
-<h1 style={{ margin: 0, fontSize: '22px', fontWeight: 'bold', letterSpacing: '-0.3px' }}>
-Beverly Kiko Housing Uganda
-</h1>
-<p style={{ margin: '4px 0 0 0', fontSize: '13px', opacity: 0.9 }}>
-Mobile Money Rent Payment & Management System
-</p>
-</div>
-{/* Portal Switch Buttons */}
-<div style={{ display: 'flex', gap: '12px' }}>
-<button
-onClick={() => setActivePortal('tenant')}
-style={{
-backgroundColor: activePortal === 'tenant' ? '#1b6b63' : '#111827',
-color: 'white',
-border: activePortal === 'tenant' ? '2px solid rgba(255,255,255,0.6)' : 'none',
-borderRadius: '10px',
-padding: '8px 16px',
-cursor: 'pointer',
-display: 'flex',
-alignItems: 'center',
-gap: '6px',
-fontSize: '13px',
-fontWeight: 'bold'
-}}
->
-<span>📱</span> Tenant Portal
-</button>
-<button
-onClick={() => setActivePortal('landlord')}
-style={{
-backgroundColor: activePortal === 'landlord' ? '#1b6b63' : '#0f172a',
-color: 'white',
-border: activePortal === 'landlord' ? '2px solid rgba(255,255,255,0.6)' : 'none',
-borderRadius: '10px',
-padding: '8px 16px',
-cursor: 'pointer',
-display: 'flex',
-alignItems: 'center',
-gap: '6px',
-fontSize: '13px',
-fontWeight: 'bold'
-}}
->
-<span>🔒</span> Landlord Portal
-</button>
-</div>
-</header>
-{/* Main Content Area */}
-<main style={{ maxWidth: '750px', margin: '24px auto', padding: '0 16px' }}>
-{/* TENANT PORTAL */}
-{activePortal === 'tenant' && (
-<div style={{
-backgroundColor: '#f8fafc',
-borderRadius: '24px',
-padding: '28px 24px',
-boxShadow: '0 20px 40px rgba(0,0,0,0.35)'
-}}>
-<h2 style={{ color: '#0c5c53', margin: '0 0 6px 0', fontSize: '26px', fontWeight: '800' }}>
-Pay Rent Online
-</h2>
-<p style={{ color: '#4b5563', margin: '0 0 24px 0', fontSize: '14px', lineHeight: '1.4' }}>
-Select your housing unit, tick your months, and pay instantly via Mobile Money.
-</p>
-{/* Select Housing Unit Dropdown */}
-<div style={{ marginBottom: '22px' }}>
-<label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '14px', color: '#111827' }}>
-Select Housing Unit
-</label>
-<select
-value={selectedUnitId}
-onChange={(e) => setSelectedUnitId(Number(e.target.value))}
-style={{
-width: '100%',
-padding: '12px 14px',
-borderRadius: '10px',
-border: '1px solid #d1d5db',
-backgroundColor: 'white',
-fontSize: '14px',
-outline: 'none',
-cursor: 'pointer',
-color: '#1f2937',
-boxSizing: 'border-box'
-}}
->
-{units.map(unit => (
-<option key={unit.id} value={unit.id}>
-{unit.name} - UGX {unit.price.toLocaleString()}/mo ({unit.location})
-</option>
-))}
-</select>
-</div>
-{/* Tick Month(s) Grid */}
-<div style={{ marginBottom: '22px' }}>
-<label style={{ display: 'block', fontWeight: 'bold', marginBottom: '12px', fontSize: '14px', color: '#111827' }}>
-📅 Tick Month(s) You Are Paying For:
-</label>
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-{monthsList.map((month) => {
-const isSelected = selectedMonths.includes(month);
-const isAlreadyPaid = selectedUnitObj.paidMonths.includes(month);
-const parts = month.split(' ');
-return (
-<div
-key={month}
-onClick={() => !isAlreadyPaid && toggleMonth(month)}
-style={{
-backgroundColor: isAlreadyPaid ? '#f3f4f6' : (isSelected ? '#e6f4f1' : 'white'),
-border: isAlreadyPaid ? '1px dashed #9ca3af' : (isSelected ? '2px solid #0c5c53' : '1px solid #e5e7eb'),
-borderRadius: '10px',
-padding: '10px 4px',
-textAlign: 'center',
-cursor: isAlreadyPaid ? 'not-allowed' : 'pointer',
-display: 'flex',
-alignItems: 'center',
-justify: 'center',
-gap: '5px',
-fontSize: '12px',
-fontWeight: isSelected ? 'bold' : 'normal',
-color: isAlreadyPaid ? '#9ca3af' : (isSelected ? '#0c5c53' : '#374151'),
-minHeight: '52px',
-boxSizing: 'border-box',
-opacity: isAlreadyPaid ? 0.7 : 1
-}}
->
-<span style={{ fontSize: '14px' }}>
-{isAlreadyPaid ? '🔒 Paid' : (isSelected ? '✓' : '▢')}
-</span>
-<span>{parts[0]}
-{parts[1]}</span>
-</div>
-);
-})}
-</div>
-</div>
-{/* Price & Selection Summary Box */}
-<div style={{
-backgroundColor: '#e6f4f1',
-padding: '16px',
-borderRadius: '14px',
-border: '1px solid #b2dfdb',
-marginBottom: '22px'
-}}>
-<div style={{ fontSize: '13px', color: '#0c5c53', fontWeight: 'bold', marginBottom: '4px' }}>
-Selected {selectedMonths.length} Month(s): {selectedMonths.join(', ')}
-</div>
-<div style={{ fontSize: '20px', fontWeight: '800', color: '#0c5c53' }}>
-Total Rent: UGX {totalPrice.toLocaleString()}
-</div>
-</div>
-{/* Mobile Money Checkout Form */}
-<form onSubmit={handleMobileMoneyPayment} style={{ backgroundColor: 'white', padding: '20px', borderRadius: '14px', border: '1px solid #e5e7eb' }}>
-<h3 style={{ margin: '0 0 14px 0', fontSize: '16px', fontWeight: 'bold', color: '#111827' }}>
-💳 Mobile Money Checkout
-</h3>
-<div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-<button
-type="button"
-onClick={() => setPaymentProvider('MTN')}
-style={{
-flex: 1,
-padding: '10px',
-borderRadius: '8px',
-border: paymentProvider === 'MTN' ? '2px solid #ffcc00' : '1px solid #d1d5db',
-backgroundColor: paymentProvider === 'MTN' ? '#fff9e6' : 'white',
-fontWeight: 'bold',
-cursor: 'pointer',
-fontSize: '13px'
-}}
->
-🟡 MTN Mobile Money
-</button>
-<button
-type="button"
-onClick={() => setPaymentProvider('AIRTEL')}
-style={{
-flex: 1,
-padding: '10px',
-borderRadius: '8px',
-border: paymentProvider === 'AIRTEL' ? '2px solid #e60000' : '1px solid #d1d5db',
-backgroundColor: paymentProvider === 'AIRTEL' ? '#ffe6e6' : 'white',
-fontWeight: 'bold',
-cursor: 'pointer',
-fontSize: '13px'
-}}
->
-🔴 Airtel Money
-</button>
-</div>
-<div style={{ marginBottom: '16px' }}>
-<label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>
-Mobile Money Phone Number (+256):
-</label>
-<input
-type="text"
-value={phoneNumber}
-onChange={(e) => setPhoneNumber(e.target.value)}
-placeholder="0770000000"
-required
-style={{
-width: '100%',
-padding: '12px',
-borderRadius: '8px',
-border: '1px solid #d1d5db',
-fontSize: '14px',
-boxSizing: 'border-box'
-}}
-/>
-</div>
-<button
-type="submit"
-disabled={isProcessingPayment}
-style={{
-width: '100%',
-backgroundColor: isProcessingPayment ? '#9ca3af' : '#0c5c53',
-color: 'white',
-border: 'none',
-borderRadius: '10px',
-padding: '14px',
-fontSize: '15px',
-fontWeight: 'bold',
-cursor: isProcessingPayment ? 'not-allowed' : 'pointer'
-}}
->
-{isProcessingPayment ? '⏳ Prompting Mobile Money PIN...' : ⁠Pay UGX ${totalPrice.toLocaleString()} via ${paymentProvider}⁠}
-</button>
-</form>
-{/* Payment Notification Alert */}
-{paymentSuccessMsg && (
-<div style={{
-marginTop: '18px',
-backgroundColor: '#dcfce7',
-color: '#15803d',
-padding: '14px',
-borderRadius: '10px',
-border: '1px solid #86efac',
-fontSize: '14px',
-lineHeight: '1.4'
-}}>
-{paymentSuccessMsg}
-</div>
-)}
-</div>
-)}
-{/* LANDLORD / ADMIN PORTAL /}
-{activePortal === 'landlord' && (
-<div style={{
-backgroundColor: '#f8fafc',
-borderRadius: '24px',
-padding: '28px 24px',
-boxShadow: '0 20px 40px rgba(0,0,0,0.35)'
-}}>
-{!isAdminLoggedIn ? (
-/ Password Protection Login Screen */
-<div style={{ maxWidth: '360px', margin: '0 auto', textAlign: 'center' }}>
-<div style={{ fontSize: '48px', marginBottom: '10px' }}>🔒</div>
-<h2 style={{ color: '#0c5c53', margin: '0 0 8px 0', fontSize: '24px', fontWeight: 'bold' }}>
-Landlord Access Portal
-</h2>
-<p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '20px' }}>
-Enter your password to access property management & financials.
-</p>
-<form onSubmit={handleAdminLogin}>
-<input
-type="password"
-placeholder="Enter Landlord Password"
-value={adminPasswordInput}
-onChange={(e) => setAdminPasswordInput(e.target.value)}
-style={{
-width: '100%',
-padding: '12px',
-borderRadius: '8px',
-border: '1px solid #d1d5db',
-marginBottom: '12px',
-fontSize: '14px',
-textAlign: 'center',
-boxSizing: 'border-box'
-}}
-/>
-{authError && (
-<p style={{ color: '#dc2626', fontSize: '12px', margin: '0 0 12px 0' }}>{authError}</p>
-)}
-<button
-type="submit"
-style={{
-width: '100%',
-backgroundColor: '#0c5c53',
-color: 'white',
-border: 'none',
-borderRadius: '8px',
-padding: '12px',
-fontWeight: 'bold',
-cursor: 'pointer'
-}}
->
-Unlock Dashboard
-</button>
-</form>
-<p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '16px' }}>
-(Default login password: <strong>admin</strong>)
-</p>
-</div>
-) : (
-/* Authenticated Landlord Admin Dashboard */
-<div>
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-<div>
-<h2 style={{ color: '#0c5c53', margin: 0, fontSize: '24px', fontWeight: '800' }}>
-Admin Dashboard
-</h2>
-<span style={{ fontSize: '12px', color: '#6b7280' }}>Kampala, Uganda</span>
-</div>
-<button
-onClick={() => setIsAdminLoggedIn(false)}
-style={{
-backgroundColor: '#ef4444',
-color: 'white',
-border: 'none',
-borderRadius: '6px',
-padding: '6px 12px',
-fontSize: '12px',
-fontWeight: 'bold',
-cursor: 'pointer'
-}}
->
-Lock Portal
-</button>
-</div>
-{/* Dashboard Stats */}
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '24px' }}>
-<div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-<div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>Total Units</div>
-<div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0c5c53', marginTop: '4px' }}>{totalUnitsCount}</div>
-</div>
-<div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-<div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>Occupied Units</div>
-<div style={{ fontSize: '24px', fontWeight: 'bold', color: '#059669', marginTop: '4px' }}>{occupiedUnitsCount}</div>
-</div>
-<div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-<div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 'bold' }}>Total Rent Collected</div>
-<div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0c5c53', marginTop: '4px' }}>UGX {totalRentCollected.toLocaleString()}</div>
-</div>
-</div>
-{/* Add New Housing Unit Section */}
-<div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '14px', border: '1px solid #e5e7eb', marginBottom: '24px' }}>
-<h3 style={{ margin: '0 0 14px 0', fontSize: '16px', color: '#0c5c53', fontWeight: 'bold' }}>
-➕ Add New Housing Unit
-</h3>
-<form onSubmit={handleAddUnit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-<input
-type="text"
-placeholder="Unit Name (e.g. Beverly Suites - Unit B5)"
-value={newUnitName}
-onChange={(e) => setNewUnitName(e.target.value)}
-required
-style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-/>
-<input
-type="text"
-placeholder="Location (e.g. Kololo, Kampala)"
-value={newUnitLocation}
-onChange={(e) => setNewUnitLocation(e.target.value)}
-style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-/>
-<input
-type="number"
-placeholder="Rent Price (UGX)"
-value={newUnitPrice}
-onChange={(e) => setNewUnitPrice(e.target.value)}
-required
-style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-/>
-<input
-type="text"
-placeholder="Tenant Name (Optional)"
-value={newUnitTenant}
-onChange={(e) => setNewUnitTenant(e.target.value)}
-style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '13px' }}
-/>
-<button
-type="submit"
-style={{
-gridColumn: 'span 2',
-backgroundColor: '#0c5c53',
-color: 'white',
-border: 'none',
-borderRadius: '8px',
-padding: '12px',
-fontWeight: 'bold',
-cursor: 'pointer'
-}}
->
-Save New Housing Unit
-</button>
-</form>
-</div>
-{/* Managed Units List */}
-<h3 style={{ fontSize: '16px', color: '#111827', margin: '0 0 12px 0' }}>
-Managed Housing Units & Rent Status
-</h3>
-<div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-{units.map((unit) => (
-<div key={unit.id} style={{ backgroundColor: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-<div>
-<strong style={{ fontSize: '15px', color: '#111827' }}>{unit.name}</strong>
-<div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>📍 {unit.location}</div>
-<div style={{ fontSize: '13px', color: '#0c5c53', fontWeight: 'bold', marginTop: '4px' }}>
-Rent: UGX {unit.price.toLocaleString()} / mo
-</div>
-<div style={{ fontSize: '12px', color: '#374151', marginTop: '4px' }}>
-Tenant: <strong>{unit.tenant}</strong> {unit.tenantPhone && ⁠(${unit.tenantPhone})⁠}
-</div>
-</div>
-<div style={{ textAlign: 'right' }}>
-<span style={{
-fontSize: '11px',
-fontWeight: 'bold',
-padding: '4px 8px',
-borderRadius: '12px',
-backgroundColor: unit.paidMonths.length > 0 ? '#dcfce7' : '#fee2e2',
-color: unit.paidMonths.length > 0 ? '#15803d' : '#991b1b'
-}}>
-{unit.paidMonths.length > 0 ? ⁠${unit.paidMonths.length} Month(s) Paid⁠ : 'Unpaid'}
-</span>
-</div>
-</div>
-{unit.paidMonths.length > 0 && (
-<div style={{ marginTop: '10px', fontSize: '11px', color: '#059669', backgroundColor: '#f0fdf4', padding: '6px 10px', borderRadius: '6px' }}>
-Paid Months: {unit.paidMonths.join(', ')}
-</div>
-)}
-</div>
-))}
-</div>
-</div>
-)}
-</div>
-)}
-</main>
-{/* Floating Audio Player */}
-<GospelAmbientPlayer />
-</div>
-);
+  const [activeTab, setActiveTab] = useState('tenant');
+  
+  // Landlord Auth state
+  const [landlordLoggedIn, setLandlordLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // Units state
+  const [units, setUnits] = useState([
+    { id: '1', name: 'Beverly Heights - Unit A1', location: 'Kololo, Kampala', price: 1800000, tenant: 'Abram Carter (+256770000001)', occupied: true },
+    { id: '2', name: 'Beverly Suites - Unit B4', location: 'Naalya, Kampala', price: 850000, tenant: 'Kiko Housing (+256750000002)', occupied: true },
+    { id: '3', name: 'Beverly Manor - Unit C2', location: 'Ntinda, Kampala', price: 1200000, tenant: 'N/A (N/A)', occupied: false },
+    { id: '4', name: 'Beverly Villa - Unit 05', location: 'Muyenga, Kampala', price: 2500000, tenant: 'N/A (N/A)', occupied: false },
+    { id: '5', name: 'Beverly Haven - Unit D1', location: 'Entebbe Road', price: 950000, tenant: 'N/A (N/A)', occupied: false }
+  ]);
+
+  // Tenant Payment state
+  const [selectedUnitId, setSelectedUnitId] = useState('1');
+  const [selectedMonths, setSelectedMonths] = useState(['October 2026']);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [paymentProvider, setPaymentProvider] = useState('MTN Mobile Money');
+  const [paymentStep, setPaymentStep] = useState('form'); // form, processing, receipt
+  const [receiptData, setReceiptData] = useState(null);
+  const [notifications, setNotifications] = useState([
+    'Payment Received: UGX 5,400,000 from Abram Carter for October 2026, August 2026, September 2026 (Beverly Heights - Unit A1)'
+  ]);
+
+  // Admin New Unit Form state
+  const [newTitle, setNewTitle] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [newPrice, setNewPrice] = useState('');
+  const [newTenant, setNewTenant] = useState('');
+
+  // Audio Player state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
+
+  const monthsList = [
+    'January 2026', 'February 2026', 'March 2026',
+    'April 2026', 'May 2026', 'June 2026',
+    'July 2026', 'August 2026', 'September 2026',
+    'October 2026', 'November 2026', 'December 2026'
+  ];
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  };
+
+  const currentUnit = units.find(u => u.id === selectedUnitId) || units[0];
+  const totalPrice = currentUnit.price * (selectedMonths.length || 1);
+
+  const handleMonthToggle = (month) => {
+    if (selectedMonths.includes(month)) {
+      if (selectedMonths.length > 1) {
+        setSelectedMonths(selectedMonths.filter(m => m !== month));
+      }
+    } else {
+      setSelectedMonths([...selectedMonths, month]);
+    }
+  };
+
+  const handlePaySubmit = (e) => {
+    e.preventDefault();
+    if (!phoneNumber) return;
+    setPaymentStep('processing');
+
+    setTimeout(() => {
+      const txId = 'TXN-' + Math.floor(1000 + Math.random() * 9000);
+      const newReceipt = {
+        txId,
+        tenantName: currentUnit.tenant.includes('(') ? currentUnit.tenant.split('(')[0].trim() : 'Abram Carter',
+        unitName: currentUnit.name,
+        months: [...selectedMonths],
+        network: paymentProvider,
+        phone: phoneNumber,
+        total: totalPrice,
+        date: new Date().toLocaleString()
+      };
+      setReceiptData(newReceipt);
+      setPaymentStep('receipt');
+
+      const notifText = `Payment Received: UGX ${totalPrice.toLocaleString()} from ${newReceipt.tenantName} for ${selectedMonths.join(', ')} (${currentUnit.name})`;
+      setNotifications([notifText, ...notifications]);
+    }, 2500);
+  };
+
+  const handleLandlordLogin = (e) => {
+    e.preventDefault();
+    if (username === 'admin' && password === 'admin') {
+      setLandlordLoggedIn(true);
+      setLoginError('');
+    } else {
+      setLoginError('Invalid username or password (use admin / admin)');
+    }
+  };
+
+  const handleAddUnit = (e) => {
+    e.preventDefault();
+    if (!newTitle || !newPrice) return;
+    const unitObj = {
+      id: Date.now().toString(),
+      name: newTitle,
+      location: newLocation || 'Kampala, Uganda',
+      price: Number(newPrice),
+      tenant: newTenant || 'N/A',
+      occupied: !!newTenant && newTenant !== 'N/A'
+    };
+    setUnits([...units, unitObj]);
+    setNewTitle('');
+    setNewLocation('');
+    setNewPrice('');
+    setNewTenant('');
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f4f7f6', fontFamily: 'Inter, sans-serif', paddingBottom: '90px' }}>
+      
+      {/* Hidden Audio Element for Gospel Stream */}
+      <audio 
+        ref={audioRef} 
+        src="https://stream.zeno.fm/f3wvbbqmdg8uv" 
+        preload="none"
+      />
+
+      {/* Top Header */}
+      <header style={{ backgroundColor: '#133e38', color: 'white', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>Beverly Kiko Housing Uganda</h1>
+          <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.8 }}>Mobile Money Rent Payment System</p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={() => setActiveTab('tenant')}
+            style={{ 
+              background: activeTab === 'tenant' ? '#1b5e55' : 'rgba(255,255,255,0.1)', 
+              color: 'white', border: '1px solid rgba(255,255,255,0.3)', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' 
+            }}
+          >
+            🏢 Tenant Portal
+          </button>
+          <button 
+            onClick={() => setActiveTab('landlord')}
+            style={{ 
+              background: activeTab === 'landlord' ? '#1b5e55' : 'rgba(255,255,255,0.1)', 
+              color: 'white', border: '1px solid rgba(255,255,255,0.3)', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' 
+            }}
+          >
+            🔒 Landlord Portal
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main style={{ maxWidth: '600px', margin: '24px auto', padding: '0 16px' }}>
+        
+        {/* TENANT PORTAL TAB */}
+        {activeTab === 'tenant' && (
+          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+            
+            {paymentStep === 'form' && (
+              <form onSubmit={handlePaySubmit}>
+                <h2 style={{ fontSize: '22px', color: '#133e38', marginBottom: '8px' }}>Pay Rent Online</h2>
+                <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>Select your housing unit, tick your months, and pay via Mobile Money.</p>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#333' }}>Select Housing Unit</label>
+                  <select 
+                    value={selectedUnitId} 
+                    onChange={(e) => setSelectedUnitId(e.target.value)}
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', backgroundColor: '#fff' }}
+                  >
+                    {units.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} - UGX {u.price.toLocaleString()}/mo ({u.location})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#333' }}>🗓️ Tick Month(s) You Are Paying For:</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                    {monthsList.map(m => {
+                      const isSelected = selectedMonths.includes(m);
+                      return (
+                        <div 
+                          key={m}
+                          onClick={() => handleMonthToggle(m)}
+                          style={{ 
+                            border: isSelected ? '2px solid #133e38' : '1px solid #ddd', 
+                            borderRadius: '8px', 
+                            padding: '10px 8px', 
+                            textAlign: 'center', 
+                            cursor: 'pointer', 
+                            backgroundColor: isSelected ? '#eef4f3' : '#fafafa',
+                            fontSize: '12px',
+                            fontWeight: isSelected ? 'bold' : 'normal',
+                            color: isSelected ? '#133e38' : '#444'
+                          }}
+                        >
+                          <div style={{ marginBottom: '4px' }}>{isSelected ? '☑️' : '◻️'}</div>
+                          {m}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ background: '#f8f9fa', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+                  <div style={{ fontSize: '13px', color: '#666' }}>Selected: <strong>{selectedMonths.length} Month(s)</strong></div>
+                  <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#133e38', marginTop: '4px' }}>UGX {totalPrice.toLocaleString()}</div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#333' }}>Mobile Money Phone Number</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. 0770000000" 
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', color: '#333' }}>Payment Network</label>
+                  <select 
+                    value={paymentProvider}
+                    onChange={(e) => setPaymentProvider(e.target.value)}
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', backgroundColor: '#fff' }}
+                  >
+                    <option value="MTN Mobile Money">MTN Mobile Money</option>
+                    <option value="Airtel Money">Airtel Money</option>
+                  </select>
+                </div>
+
+                <button 
+                  type="submit" 
+                  style={{ width: '100%', background: '#133e38', color: 'white', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Pay UGX {totalPrice.toLocaleString()} Now
+                </button>
+              </form>
+            )}
+
+            {paymentStep === 'processing' && (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div style={{ fontSize: '40px', marginBottom: '16px' }}>📱</div>
+                <h3 style={{ color: '#133e38', marginBottom: '8px' }}>Sending Mobile Money Prompt...</h3>
+                <p style={{ color: '#666', fontSize: '14px' }}>Please check your phone ({phoneNumber}) and enter your PIN.</p>
+              </div>
+            )}
+
+            {paymentStep === 'receipt' && receiptData && (
+              <div style={{ border: '2px dashed #133e38', borderRadius: '12px', padding: '20px', backgroundColor: '#fafcfb' }}>
+                <div style={{ textAlign: 'center', borderBottom: '1px solid #ddd', paddingBottom: '12px', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0, color: '#133e38' }}>Beverly Kiko Housing Uganda</h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>Official Rent Payment Receipt</p>
+                  <div style={{ display: 'inline-block', backgroundColor: '#d1e7dd', color: '#0f5132', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', marginTop: '8px' }}>
+                    PAID & VERIFIED ✓
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '13px', color: '#333', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Transaction ID:</span> <strong>{receiptData.txId}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tenant Name:</span> <strong>{receiptData.tenantName}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Housing Unit:</span> <strong>{receiptData.unitName}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Month(s) Covered:</span> <strong style={{ textAlign: 'right', maxWidth: '180px' }}>{receiptData.months.join(', ')}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Network:</span> <strong>{receiptData.network} ({receiptData.phone})</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Date & Time:</span> <strong>{receiptData.date}</strong></div>
+                  <hr style={{ border: '0', borderTop: '1px solid #ddd', margin: '4px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', color: '#133e38' }}><span>Total Paid:</span> <strong>UGX {receiptData.total.toLocaleString()}</strong></div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => window.print()}
+                    style={{ flex: 1, backgroundColor: '#333', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    🖨️ Print Receipt
+                  </button>
+                  <button 
+                    onClick={() => setPaymentStep('form')}
+                    style={{ flex: 1, backgroundColor: '#133e38', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    New Payment
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* LANDLORD PORTAL TAB */}
+        {activeTab === 'landlord' && (
+          <div>
+            {!landlordLoggedIn ? (
+              <div style={{ background: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                <h2 style={{ fontSize: '20px', color: '#133e38', marginBottom: '4px' }}>🔒 Landlord Portal Login</h2>
+                <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>Authorized access for property administrators.</p>
+                
+                {loginError && <div style={{ backgroundColor: '#f8d7da', color: '#842029', padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '16px' }}>{loginError}</div>}
+
+                <form onSubmit={handleLandlordLogin}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>Username</label>
+                    <input 
+                      type="text" 
+                      value={username} 
+                      onChange={(e) => setUsername(e.target.value)} 
+                      placeholder="admin"
+                      required
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>Password</label>
+                    <input 
+                      type="password" 
+                      value={password} 
+                      onChange={(e) => setPassword(e.target.value)} 
+                      placeholder="admin"
+                      required
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <button type="submit" style={{ width: '100%', backgroundColor: '#133e38', color: 'white', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    Login to Admin Dashboard
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div style={{ background: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h2 style={{ fontSize: '20px', color: '#133e38', margin: 0 }}>Landlord Control Panel</h2>
+                  <button onClick={() => setLandlordLoggedIn(false)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+                    Logout
+                  </button>
+                </div>
+
+                {/* Notifications Box */}
+                <div style={{ backgroundColor: '#fff3cd', border: '1px solid #ffeeba', padding: '12px', borderRadius: '8px', marginBottom: '20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#856404', marginBottom: '4px' }}>🔔 Live Rent Payment Notifications</div>
+                  {notifications.map((n, idx) => (
+                    <div key={idx} style={{ fontSize: '12px', color: '#533f03', marginTop: '4px' }}>• {n}</div>
+                  ))}
+                </div>
+
+                {/* Add New Unit Form */}
+                <div style={{ background: '#f8f9fa', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '15px', color: '#133e38', marginTop: 0, marginBottom: '12px' }}>➕ Add New Housing Unit</h3>
+                  <form onSubmit={handleAddUnit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Unit Title (e.g. Unit D3)" 
+                      value={newTitle} 
+                      onChange={(e) => setNewTitle(e.target.value)} 
+                      required 
+                      style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Location (e.g. Kololo)" 
+                      value={newLocation} 
+                      onChange={(e) => setNewLocation(e.target.value)} 
+                      style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}
+                    />
+                    <input 
+                      type="number" 
+                      placeholder="Monthly Rent (UGX)" 
+                      value={newPrice} 
+                      onChange={(e) => setNewPrice(e.target.value)} 
+                      required 
+                      style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Tenant Name & Phone (optional)" 
+                      value={newTenant} 
+                      onChange={(e) => setNewTenant(e.target.value)} 
+                      style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '13px' }}
+                    />
+                    <button type="submit" style={{ backgroundColor: '#133e38', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
+                      Save Unit to System
+                    </button>
+                  </form>
+                </div>
+
+                {/* Existing Units List */}
+                <h3 style={{ fontSize: '15px', color: '#133e38', marginBottom: '10px' }}>Managed Units ({units.length})</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {units.map(u => (
+                    <div key={u.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#133e38' }}>{u.name}</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>{u.location} • UGX {u.price.toLocaleString()}/mo</div>
+                        <div style={{ fontSize: '11px', color: '#0f5132', marginTop: '2px' }}>Tenant: {u.tenant}</div>
+                      </div>
+                      <button 
+                        onClick={() => setUnits(units.filter(item => item.id !== u.id))} 
+                        style={{ background: '#ffcccc', color: '#990000', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            )}
+          </div>
+        )}
+
+      </main>
+
+      {/* Floating Gospel Ambient Player Bar */}
+      <div style={{ position: 'fixed', bottom: '16px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#133e38', color: 'white', padding: '10px 20px', borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 1000 }}>
+        <div style={{ fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          🎵 Gospel Ambient Player
+        </div>
+        <button 
+          onClick={togglePlay}
+          style={{ backgroundColor: 'white', color: '#133e38', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
+          {isPlaying ? '⏸️ Pause' : '▶ Play'}
+        </button>
+      </div>
+
+    </div>
+  );
 }
